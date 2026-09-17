@@ -1,0 +1,18 @@
+export const icons = {
+    aw: "https://fonts.gstatic.com/s/i/productlogos/ads/v5/192px.svg",
+    google_ads: "https://fonts.gstatic.com/s/i/productlogos/ads/v5/192px.svg",
+    gtm: "https://www.gstatic.com/containertag/images/gtm-icon.svg",
+    google_tag_manager: "https://www.gstatic.com/containertag/images/gtm-icon.svg",
+    container_tag: "https://www.gstatic.com/containertag/images/gtag-solid-icon.svg",
+    google_analytics: "https://www.gstatic.com/analytics-suite/images/ga.svg",
+    analytics: "https://www.gstatic.com/analytics-suite/images/ga.svg",
+    a_exp: "https://cdn.experience.adobe.net/assets/HeroIcons.6620f5dc.svg#AdobeExperienceCloud",
+    adobe_experience_platform_launch: "https://cdn.experience.adobe.net/assets/HeroIcons.6620f5dc.svg#AdobeExperienceCloud",
+    launch: "https://cdn.experience.adobe.net/assets/HeroIcons.6620f5dc.svg#AdobeExperienceCloud",
+    tealium: "https://www.google.com/s2/favicons?sz=64&domain_url=tealium.com",
+    tealium_iq: "https://www.google.com/s2/favicons?sz=64&domain_url=tealium.com",
+    matomo: "https://www.google.com/s2/favicons?sz=64&domain_url=matomo.org",
+    matomo_tag_manager: "https://www.google.com/s2/favicons?sz=64&domain_url=matomo.org",
+    segment: "https://www.google.com/s2/favicons?sz=64&domain_url=segment.com",
+    segment_analytics: "https://www.google.com/s2/favicons?sz=64&domain_url=segment.com",
+};

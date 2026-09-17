@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <button id="btn-hard-reload" type="button">🔄 Forzar recarga sin caché</button>
+    <details class="data-details" open>
+      <summary>Data Layer</summary>
+      <div class="details-content">
+        <input type="search" id="event-filter" placeholder="Filtrar eventos...">
+        <pre id="output">Cargando...</pre>
+      </div>
+    </details>
+    <details class="data-details">
+      <summary>Digital Data</summary>
+      <div class="details-content">
+        <input type="search" id="digitalData-filter" placeholder="Filtrar llaves...">
+        <pre id="digitalData-output">Cargando...</pre>
+      </div>
+    </details>
+    <details id="tm">
+      <summary>Tag Managers</summary>
+      <div id="tag-managers-list" class="tag-managers-list">
+        <small>No tag managers found...</small>
+      </div>
+      <button id="refresh-tag-managers" type="button">Refresh</button>
+    </details>
+    <details>
+      <summary>Alertas...</summary>
+      <small id="alerts"></small>
+    </details>
+  </div>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
