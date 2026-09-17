@@ -1,9 +1,72 @@
-chrome.action.onClicked.addListener((tab) => {
-  // Abre el panel lateral al hacer clic en el ícono de la extensión
-  chrome.sidePanel.setOptions({
-    tabId: tab.id,
-    path: 'popup.html',
-    enabled: true
-  });
-  chrome.sidePanel.open({ tabId: tab.id });
+// Memoria volátil para almacenar las últimas peticiones (máx 150)
+const MAX_REQUESTS = 150;
+let capturedRequests = [];
+
+// Escucha todas las peticiones antes de ser enviadas
+chrome.webRequest.onBeforeRequest.addListener(
+  (details) => {
+    // Excluir peticiones internas del navegador o de la propia extensión
+    if (details.url.startsWith("chrome-extension://") || details.tabId === -1) {
+      return;
+    }
+
+    const parsedUrl = new URL(details.url);
+
+    // Estructura de la petición interceptada
+    const requestItem = {
+      id: details.requestId,
+      tabId: details.tabId,
+      method: details.method,
+      url: details.url,
+      originUrl: details.initiator || "Direct / Desconocido",
+      pathname: parsedUrl.pathname,
+      hostname: parsedUrl.hostname,
+      queryParams: Object.fromEntries(parsedUrl.searchParams.entries()),
+      timestamp: new Date().toLocaleTimeString(),
+      timeStampRaw: details.timeStamp
+    };
+
+    // Si tiene payload POST (form-data o raw)
+    if (details.requestBody) {
+      if (details.requestBody.formData) {
+        requestItem.formData = details.requestBody.formData;
+      } else if (details.requestBody.raw) {
+        try {
+          const decoder = new TextDecoder("utf-8");
+          const rawStrings = details.requestBody.raw.map(buffer => decoder.decode(buffer.bytes));
+          requestItem.rawBody = rawStrings.join("");
+        } catch (e) {
+          requestItem.rawBody = "[Binario / No decodificable]";
+        }
+      }
+    }
+
+    // Guardar en la cola
+    capturedRequests.unshift(requestItem);
+    if (capturedRequests.length > MAX_REQUESTS) {
+      capturedRequests.pop();
+    }
+
+    // Persistir temporalmente en chrome.storage.local
+    chrome.storage.local.set({ capturedRequests });
+
+    // Enviar mensaje en vivo por si el popup está activo
+    chrome.runtime.sendMessage({
+      type: "NEW_REQUEST",
+      payload: requestItem
+    }).catch(() => {
+      // Ignorar error si el popup no está abierto en ese instante
+    });
+  },
+  { urls: ["<all_urls>"] },
+  ["requestBody"]
+);
+
+// Manejo de comandos para limpiar registros
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "CLEAR_REQUESTS") {
+    capturedRequests = [];
+    chrome.storage.local.set({ capturedRequests: [] });
+    sendResponse({ status: "ok" });
+  }
 });
