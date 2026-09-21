@@ -18,12 +18,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (storedConfig.currentTabOnly !== undefined) currentTabOnlyCheckbox.checked = storedConfig.currentTabOnly;
 
   // Función principal para renderizar peticiones
-  function renderRequests(requests) {
+  function renderRequests(requests, replaceExisting = true) {
     const query = targetFilterInput.value.trim().toLowerCase();
     const filterByTab = currentTabOnlyCheckbox.checked;
 
     // Filtrar solicitudes según el input y pestaña
-    const filtered = requests.filter(req => {
+    let filtered = requests.filter(req => {
       const matchesTab = filterByTab ? (req.tabId === activeTabId) : true;
       const matchesUrl = query === "" || 
         req.url.toLowerCase().includes(query) || 
@@ -33,18 +33,31 @@ document.addEventListener("DOMContentLoaded", async () => {
       return matchesTab && matchesUrl;
     });
 
-    counterSpan.textContent = filtered.length;
+    if (!replaceExisting) {
+      const existingRequestIds = new Set(
+        [...requestListContainer.querySelectorAll(".request-card")]
+          .map(card => card.dataset.requestId)
+      );
+      filtered = filtered.filter(req => !existingRequestIds.has(String(req.id)));
+    }
+
+    counterSpan.textContent = replaceExisting
+      ? filtered.length
+      : requestListContainer.querySelectorAll(".request-card").length + filtered.length;
 
     if (filtered.length === 0) {
-      requestListContainer.innerHTML = `
-        <div class="empty-state">
-          No hay peticiones registradas que coincidan con el filtro actual.
-        </div>
-      `;
+      if (replaceExisting) {
+        requestListContainer.innerHTML = `
+          <div class="empty-state">
+            No hay peticiones registradas que coincidan con el filtro actual.
+          </div>
+        `;
+      }
       return;
     }
 
-    requestListContainer.innerHTML = "";
+    if (replaceExisting) requestListContainer.innerHTML = "";
+    requestListContainer.querySelector(".empty-state")?.remove();
 
     filtered.forEach(req => {
       const card = document.createElement("div");
@@ -65,7 +78,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               <details class="param-details">
                 <summary>
                   <span class="param-key">${escapeHtml(k)}</span>
-                  <span class="param-val">${escapeHtml(req.queryParams[k])}</span>
+                  <span class="param-val">${escapeHtml(decodeQueryParam(req.queryParams[k]))}</span>
                 </summary>
                 <pre class="param-json">${escapeHtml(JSON.stringify(translateQueryParam(k, req.queryParams[k]), null, 2))}</pre>
               </details>
@@ -129,10 +142,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  async function refresh() {
+  async function refresh(replaceExisting = true) {
     const data = await chrome.storage.local.get("capturedRequests");
-    renderRequests(data.capturedRequests || []);
+    renderRequests(data.capturedRequests || [], replaceExisting);
   }
+
+  const refreshInterval = setInterval(() => refresh(false), 1000);
+  window.addEventListener("unload", () => clearInterval(refreshInterval));
 
   // Guardar y aplicar filtros al escribir
   targetFilterInput.addEventListener("input", () => {
@@ -175,6 +191,16 @@ function translateQueryParam(key, value) {
   });
 
   return result;
+}
+
+function decodeQueryParam(value) {
+  if (typeof value !== "string") return value;
+
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 function parseProductList(value) {
