@@ -208,6 +208,8 @@ function parseProductList(value) {
   if (!list) return [];
 
   return list.split(",").map(product => {
+    if (!product.includes("=")) return product;
+
     const result = {};
     product.split("&").forEach(part => {
       const separatorIndex = part.indexOf("=");

@@ -219,11 +219,14 @@ main {
 .param-key {
   color: #6366f1;
   font-weight: 600;
-  width: 35%;
+  flex: 0 0 35%;
+  width: auto;
   word-break: break-all;
 }
 
 .param-val {
+  flex: 1 1 auto;
+  min-width: 0;
   color: #0f172a;
   word-break: break-all;
 }
