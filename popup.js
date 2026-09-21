@@ -59,7 +59,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (replaceExisting) requestListContainer.innerHTML = "";
     requestListContainer.querySelector(".empty-state")?.remove();
 
-    filtered.forEach(req => {
+    filtered
+      .sort((first, second) => second.timeStampRaw - first.timeStampRaw)
+      .forEach(req => {
       const card = document.createElement("div");
       card.className = "request-card";
       card.dataset.requestId = req.id;
@@ -106,6 +108,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="card-header">
             <span class="method ${req.method}">${req.method}</span>
             <span class="url-host" title="${escapeHtml(req.hostname)}">${escapeHtml(req.hostname)}</span>
+            <span class="event-type">${escapeHtml(getEventType(req))}</span>
             <span class="timestamp">${req.timestamp}</span>
           </div>
           <div class="card-path" title="${escapeHtml(req.url)}">${escapeHtml(req.pathname)}</div>
@@ -139,7 +142,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       requestListContainer.appendChild(card);
-    });
+      });
   }
 
   async function refresh(replaceExisting = true) {
@@ -149,6 +152,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const refreshInterval = setInterval(() => refresh(false), 1000);
   window.addEventListener("unload", () => clearInterval(refreshInterval));
+
+  // Añadir inmediatamente las peticiones nuevas; el intervalo funciona como respaldo.
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === "NEW_REQUEST" && message.payload) {
+      renderRequests([message.payload], false);
+    }
+  });
 
   // Guardar y aplicar filtros al escribir
   targetFilterInput.addEventListener("input", () => {
@@ -201,6 +211,19 @@ function decodeQueryParam(value) {
   } catch {
     return value;
   }
+}
+
+function getEventType(request) {
+  const queryParams = request.queryParams || {};
+  const translatedP2 = translateQueryParam("p2", queryParams.p2);
+  const eventCode = queryParams.e || translatedP2.e;
+  const eventTypes = {
+    vl: "View Listing",
+    ac: "Add to Cart",
+    vh: "View Home"
+  };
+
+  return eventTypes[eventCode] || eventCode || "Evento desconocido";
 }
 
 function parseProductList(value) {

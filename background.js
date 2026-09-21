@@ -1,6 +1,14 @@
 // Memoria volátil para almacenar las últimas peticiones (máx 150)
-const MAX_REQUESTS = 150;
+const MAX_REQUESTS = 1000;
 let capturedRequests = [];
+let storageWriteQueue = Promise.resolve();
+
+// Recuperar las peticiones existentes cuando el service worker se reactiva.
+const storageReady = chrome.storage.local.get("capturedRequests").then(data => {
+  if (capturedRequests.length === 0) {
+    capturedRequests = data.capturedRequests || [];
+  }
+});
 
 // Escucha todas las peticiones antes de ser enviadas
 chrome.webRequest.onBeforeRequest.addListener(
@@ -14,7 +22,7 @@ chrome.webRequest.onBeforeRequest.addListener(
 
     // Estructura de la petición interceptada
     const requestItem = {
-      id: details.requestId,
+      id: `${details.requestId}-${details.timeStamp}`,
       tabId: details.tabId,
       method: details.method,
       url: details.url,
@@ -47,8 +55,11 @@ chrome.webRequest.onBeforeRequest.addListener(
       capturedRequests.pop();
     }
 
-    // Persistir temporalmente en chrome.storage.local
-    chrome.storage.local.set({ capturedRequests });
+    // Serializar las escrituras para evitar que una operación vieja sobrescriba otra nueva.
+    const requestsToStore = [...capturedRequests];
+    storageWriteQueue = storageWriteQueue.then(() =>
+      chrome.storage.local.set({ capturedRequests: requestsToStore })
+    );
 
     // Enviar mensaje en vivo por si el popup está activo
     chrome.runtime.sendMessage({
