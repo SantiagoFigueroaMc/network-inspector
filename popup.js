@@ -60,14 +60,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (queryKeys.length > 0) {
         queryTableHtml = `
           <strong>Query Parameters:</strong>
-          <table class="param-table">
+          <div class="param-list">
             ${queryKeys.map(k => `
-              <tr>
-                <td class="param-key">${escapeHtml(k)}</td>
-                <td class="param-val">${escapeHtml(req.queryParams[k])}</td>
-              </tr>
+              <details class="param-details">
+                <summary>
+                  <span class="param-key">${escapeHtml(k)}</span>
+                  <span class="param-val">${escapeHtml(req.queryParams[k])}</span>
+                </summary>
+                <pre class="param-json">${escapeHtml(JSON.stringify(translateQueryParam(k, req.queryParams[k]), null, 2))}</pre>
+              </details>
             `).join("")}
-          </table>
+          </div>
         `;
       }
 
@@ -86,14 +89,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       card.innerHTML = `
-        <div class="card-header">
-          <span class="method ${req.method}">${req.method}</span>
-          <span class="url-host" title="${escapeHtml(req.hostname)}">${escapeHtml(req.hostname)}</span>
-          <span class="timestamp">${req.timestamp}</span>
+        <div class="request-summary">
+          <div class="card-header">
+            <span class="method ${req.method}">${req.method}</span>
+            <span class="url-host" title="${escapeHtml(req.hostname)}">${escapeHtml(req.hostname)}</span>
+            <span class="timestamp">${req.timestamp}</span>
+          </div>
+          <div class="card-path" title="${escapeHtml(req.url)}">${escapeHtml(req.pathname)}</div>
         </div>
-        <div class="card-path" title="${escapeHtml(req.url)}">${escapeHtml(req.pathname)}</div>
         <div class="card-details ${isExpanded ? "open" : ""}">
-          <div style="margin-bottom: 6px;"><strong>URL Completa:</strong> <span style="word-break:break-all;">${escapeHtml(req.url)}</span></div>
+          <details class="full-url-details">
+            <summary>URL Completa</summary>
+            <div class="full-url-value">${escapeHtml(req.url)}</div>
+          </details>
           <div style="margin-bottom: 6px;"><strong>Origen (Initiator):</strong> ${escapeHtml(req.originUrl)}</div>
           ${queryTableHtml}
           ${payloadHtml}
@@ -126,13 +134,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderRequests(data.capturedRequests || []);
   }
 
-  // Escuchar nuevas peticiones en tiempo real enviadas por el Service Worker
-  chrome.runtime.onMessage.addListener((message) => {
-    if (message.type === "NEW_REQUEST") {
-      refresh();
-    }
-  });
-
   // Guardar y aplicar filtros al escribir
   targetFilterInput.addEventListener("input", () => {
     chrome.storage.local.set({ filterQuery: targetFilterInput.value });
@@ -155,6 +156,68 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Carga inicial
   refresh();
 });
+
+function translateQueryParam(key, value) {
+  if (key !== "p2" || typeof value !== "string") return value;
+
+  const result = {};
+  const normalizedValue = value.includes("=") ? value : decodeURIComponent(value);
+  normalizedValue.split("&").forEach(part => {
+    const separatorIndex = part.indexOf("=");
+    const field = separatorIndex === -1 ? part : part.slice(0, separatorIndex);
+    const fieldValue = separatorIndex === -1 ? "" : part.slice(separatorIndex + 1);
+
+    if (field === "p") {
+      result[field] = parseProductList(decodeRepeatedly(fieldValue));
+    } else if (field) {
+      result[field] = parseJsonValue(decodeRepeatedly(fieldValue));
+    }
+  });
+
+  return result;
+}
+
+function parseProductList(value) {
+  const list = value.replace(/^\[|\]$/g, "");
+  if (!list) return [];
+
+  return list.split(",").map(product => {
+    const result = {};
+    product.split("&").forEach(part => {
+      const separatorIndex = part.indexOf("=");
+      const field = separatorIndex === -1 ? part : part.slice(0, separatorIndex);
+      const fieldValue = separatorIndex === -1 ? "" : part.slice(separatorIndex + 1);
+      if (field) {
+        const normalizedField = field === "pr" ? "p" : field;
+        const decodedFieldValue = decodeRepeatedly(fieldValue);
+        result[normalizedField] = normalizedField === "i"
+          ? decodedFieldValue
+          : parseJsonValue(decodedFieldValue);
+      }
+    });
+    return result;
+  });
+}
+
+function parseJsonValue(value) {
+  if (value !== "" && !Number.isNaN(Number(value))) return Number(value);
+  return value;
+}
+
+function decodeRepeatedly(value) {
+  let decoded = value;
+  for (let i = 0; i < 5; i += 1) {
+    let next;
+    try {
+      next = decodeURIComponent(decoded);
+    } catch {
+      break;
+    }
+    if (next === decoded) break;
+    decoded = next;
+  }
+  return decoded;
+}
 
 // Función utilitaria para evitar XSS al renderizar texto
 function escapeHtml(str) {

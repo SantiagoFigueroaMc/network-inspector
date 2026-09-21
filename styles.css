@@ -119,6 +119,16 @@ main {
   border-color: #94a3b8;
 }
 
+.request-summary {
+  position: sticky;
+  top: -8px;
+  z-index: 1;
+  margin: -8px -10px 0;
+  padding: 8px 10px 4px;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
 .card-header {
   display: flex;
   align-items: center;
@@ -172,17 +182,38 @@ main {
   display: block;
 }
 
-.param-table {
-  width: 100%;
-  border-collapse: collapse;
+.param-list {
   margin-top: 4px;
+}
+
+.param-details {
+  border-bottom: 1px solid #f1f5f9;
   font-family: monospace;
 }
 
-.param-table td {
-  padding: 2px 4px;
-  border-bottom: 1px solid #f1f5f9;
-  vertical-align: top;
+.param-details summary {
+  display: flex;
+  gap: 8px;
+  padding: 3px 4px;
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.param-details summary::marker {
+  color: #94a3b8;
+}
+
+.param-details[open] summary {
+  background: #f8fafc;
+}
+
+.param-json {
+  margin: 0 4px 4px 22px;
+  background: #f1f5f9;
+  padding: 6px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-x: auto;
 }
 
 .param-key {
