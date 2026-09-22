@@ -323,27 +323,31 @@ function parseProductEntry(product) {
 
 function getEventType(request, translations = DEFAULT_EVENT_TRANSLATIONS) {
   const queryParams = request.queryParams || {};
+  const hostname = (request.hostname || "").toLowerCase();
+
+  // Preferir coincidencias de dominio específicas sobre el comodín "*"
+  const findMatch = code => translations.find(entry => entry.code === code && entry.domain !== "*" && hostname.includes(entry.domain))
+    || translations.find(entry => entry.code === code && entry.domain === "*");
+
   let eventCode = queryParams.e;
 
-  // El código de evento puede venir dentro de cualquiera de los params pN (p0 a p4), no solo p2
   if (!eventCode) {
-    for (const key of ["p0", "p1", "p2", "p3", "p4"]) {
+    const codesByKey = {};
+    for (const key of ["p4", "p3", "p2", "p1", "p0"]) {
       const translated = translateQueryParam(key, queryParams[key]);
       if (translated && typeof translated === "object" && translated.e) {
-        eventCode = translated.e;
-        break;
+        codesByKey[key] = translated.e;
       }
     }
+
+    // Usar el pN cuyo código tenga traducción conocida; si ninguno la tiene, caer a p0
+    const keyWithMatch = Object.keys(codesByKey).find(key => findMatch(codesByKey[key]));
+    eventCode = keyWithMatch ? codesByKey[keyWithMatch] : codesByKey.p0;
   }
 
   if (!eventCode) return "Evento desconocido";
 
-  const hostname = (request.hostname || "").toLowerCase();
-
-  // Preferir coincidencias de dominio específicas sobre el comodín "*"
-  const match = translations.find(entry => entry.code === eventCode && entry.domain !== "*" && hostname.includes(entry.domain))
-    || translations.find(entry => entry.code === eventCode && entry.domain === "*");
-
+  const match = findMatch(eventCode);
   return match ? match.label : eventCode;
 }
 
