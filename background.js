@@ -81,3 +81,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ status: "ok" });
   }
 });
+
+// Limpiar las peticiones de una pestaña cuando esta recarga o navega a otra página
+chrome.webNavigation.onBeforeNavigate.addListener((details) => {
+  if (details.frameId !== 0) return; // Solo navegación del frame principal, no iframes
+
+  capturedRequests = capturedRequests.filter(req => req.tabId !== details.tabId);
+
+  const requestsToStore = [...capturedRequests];
+  storageWriteQueue = storageWriteQueue.then(() =>
+    chrome.storage.local.set({ capturedRequests: requestsToStore })
+  );
+
+  chrome.runtime.sendMessage({
+    type: "TAB_REQUESTS_CLEARED",
+    tabId: details.tabId
+  }).catch(() => {
+    // Ignorar error si el popup no está abierto en ese instante
+  });
+});

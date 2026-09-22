@@ -5,6 +5,7 @@
   "description": "Monitorea y visualiza peticiones enviadas hacia endpoints o dominios específicos.",
   "permissions": [
     "webRequest",
+    "webNavigation",
     "storage",
     "activeTab"
   ],

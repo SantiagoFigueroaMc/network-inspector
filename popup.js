@@ -1,9 +1,27 @@
+// Traducciones de eventos por defecto, agrupadas por dominio ("criteo" o patrón custom, "*" aplica a cualquiera)
+const DEFAULT_EVENT_TRANSLATIONS = [
+  { domain: "criteo", code: "vl", label: "View Listing" },
+  { domain: "criteo", code: "ac", label: "Add to Cart" },
+  { domain: "criteo", code: "vh", label: "View Home" },
+  { domain: "criteo", code: "vpg", label: "View page" },
+];
+
+let eventTranslations = DEFAULT_EVENT_TRANSLATIONS;
+
 document.addEventListener("DOMContentLoaded", async () => {
   const targetFilterInput = document.getElementById("targetFilter");
   const currentTabOnlyCheckbox = document.getElementById("currentTabOnly");
   const clearBtn = document.getElementById("clearBtn");
   const requestListContainer = document.getElementById("requestList");
   const counterSpan = document.getElementById("counter");
+  const settingsBtn = document.getElementById("settingsBtn");
+  const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+  const settingsPanel = document.getElementById("settingsPanel");
+  const translationListContainer = document.getElementById("translationList");
+  const translationForm = document.getElementById("translationForm");
+  const newDomainInput = document.getElementById("newDomain");
+  const newCodeInput = document.getElementById("newCode");
+  const newLabelInput = document.getElementById("newLabel");
 
   // Conjunto para persistir los IDs de tarjetas que el usuario ha expandido
   const expandedRequestIds = new Set();
@@ -13,9 +31,71 @@ document.addEventListener("DOMContentLoaded", async () => {
   const activeTabId = activeTab ? activeTab.id : null;
 
   // Cargar filtro previo guardado
-  const storedConfig = await chrome.storage.local.get(["filterQuery", "currentTabOnly"]);
+  const storedConfig = await chrome.storage.local.get(["filterQuery", "currentTabOnly", "eventTranslations"]);
   if (storedConfig.filterQuery) targetFilterInput.value = storedConfig.filterQuery;
   if (storedConfig.currentTabOnly !== undefined) currentTabOnlyCheckbox.checked = storedConfig.currentTabOnly;
+  eventTranslations = storedConfig.eventTranslations && storedConfig.eventTranslations.length > 0
+    ? storedConfig.eventTranslations
+    : DEFAULT_EVENT_TRANSLATIONS;
+
+  function renderTranslationList() {
+    if (eventTranslations.length === 0) {
+      translationListContainer.innerHTML = `<div class="empty-state">Sin traducciones configuradas.</div>`;
+      return;
+    }
+
+    translationListContainer.innerHTML = eventTranslations.map((entry, index) => `
+      <div class="translation-row" data-index="${index}">
+        <span class="domain-tag">${escapeHtml(entry.domain)}</span>
+        <span class="code-tag">${escapeHtml(entry.code)}</span>
+        <span class="label-text">${escapeHtml(entry.label)}</span>
+        <button type="button" class="remove-btn" title="Eliminar">✕</button>
+      </div>
+    `).join("");
+  }
+
+  function persistTranslations() {
+    chrome.storage.local.set({ eventTranslations });
+  }
+
+  renderTranslationList();
+
+  settingsBtn.addEventListener("click", () => {
+    settingsPanel.classList.toggle("hidden");
+  });
+
+  closeSettingsBtn.addEventListener("click", () => {
+    settingsPanel.classList.add("hidden");
+  });
+
+  translationForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const domain = newDomainInput.value.trim().toLowerCase();
+    const code = newCodeInput.value.trim().toLowerCase();
+    const label = newLabelInput.value.trim();
+    if (!domain || !code || !label) return;
+
+    eventTranslations = eventTranslations.filter(entry => !(entry.domain === domain && entry.code === code));
+    eventTranslations.push({ domain, code, label });
+    persistTranslations();
+    renderTranslationList();
+    refresh();
+
+    translationForm.reset();
+    newDomainInput.focus();
+  });
+
+  translationListContainer.addEventListener("click", (e) => {
+    const removeBtn = e.target.closest(".remove-btn");
+    if (!removeBtn) return;
+
+    const row = removeBtn.closest(".translation-row");
+    const index = Number(row.dataset.index);
+    eventTranslations.splice(index, 1);
+    persistTranslations();
+    renderTranslationList();
+    refresh();
+  });
 
   // Función principal para renderizar peticiones
   function renderRequests(requests, replaceExisting = true) {
@@ -108,7 +188,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="card-header">
             <span class="method ${req.method}">${req.method}</span>
             <span class="url-host" title="${escapeHtml(req.hostname)}">${escapeHtml(req.hostname)}</span>
-            <span class="event-type">${escapeHtml(getEventType(req))}</span>
+            <span class="event-type">${escapeHtml(getEventType(req, eventTranslations))}</span>
             <span class="timestamp">${req.timestamp}</span>
           </div>
           <div class="card-path" title="${escapeHtml(req.url)}">${escapeHtml(req.pathname)}</div>
@@ -157,6 +237,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === "NEW_REQUEST" && message.payload) {
       renderRequests([message.payload], false);
+    } else if (message.type === "TAB_REQUESTS_CLEARED") {
+      expandedRequestIds.clear();
+      refresh();
     }
   });
 
@@ -213,41 +296,51 @@ function decodeQueryParam(value) {
   }
 }
 
-function getEventType(request) {
+// El campo "p" llega como string plano o como lista entre corchetes (ej: "[i=1&name=x&pr=2&q=1]")
+function parseProductList(value) {
+  if (typeof value !== "string") return value;
+
+  const trimmed = value.trim();
+  if (!(trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+    return value;
+  }
+
+  const inner = trimmed.slice(1, -1);
+  if (!inner) return [];
+
+  return inner.split(",").map(parseProductEntry);
+}
+
+function parseProductEntry(product) {
+  if (!product.includes("=")) return product;
+
+  const result = {};
+  product.split("&").forEach(part => {
+    const separatorIndex = part.indexOf("=");
+    const field = separatorIndex === -1 ? part : part.slice(0, separatorIndex);
+    const fieldValue = separatorIndex === -1 ? "" : part.slice(separatorIndex + 1);
+    if (!field) return;
+
+    result[field] = field === "i" || field === "name"
+      ? decodeRepeatedly(fieldValue)
+      : parseJsonValue(decodeRepeatedly(fieldValue));
+  });
+  return result;
+}
+
+function getEventType(request, translations = DEFAULT_EVENT_TRANSLATIONS) {
   const queryParams = request.queryParams || {};
   const translatedP2 = translateQueryParam("p2", queryParams.p2);
   const eventCode = queryParams.e || translatedP2.e;
-  const eventTypes = {
-    vl: "View Listing",
-    ac: "Add to Cart",
-    vh: "View Home"
-  };
+  if (!eventCode) return "Evento desconocido";
 
-  return eventTypes[eventCode] || eventCode || "Evento desconocido";
-}
+  const hostname = (request.hostname || "").toLowerCase();
 
-function parseProductList(value) {
-  const list = value.replace(/^\[|\]$/g, "");
-  if (!list) return [];
+  // Preferir coincidencias de dominio específicas sobre el comodín "*"
+  const match = translations.find(entry => entry.code === eventCode && entry.domain !== "*" && hostname.includes(entry.domain))
+    || translations.find(entry => entry.code === eventCode && entry.domain === "*");
 
-  return list.split(",").map(product => {
-    if (!product.includes("=")) return product;
-
-    const result = {};
-    product.split("&").forEach(part => {
-      const separatorIndex = part.indexOf("=");
-      const field = separatorIndex === -1 ? part : part.slice(0, separatorIndex);
-      const fieldValue = separatorIndex === -1 ? "" : part.slice(separatorIndex + 1);
-      if (field) {
-        const normalizedField = field === "pr" ? "p" : field;
-        const decodedFieldValue = decodeRepeatedly(fieldValue);
-        result[normalizedField] = normalizedField === "i"
-          ? decodedFieldValue
-          : parseJsonValue(decodedFieldValue);
-      }
-    });
-    return result;
-  });
+  return match ? match.label : eventCode;
 }
 
 function parseJsonValue(value) {

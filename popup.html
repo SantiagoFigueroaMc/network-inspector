@@ -9,7 +9,10 @@
   <header>
     <div class="header-title">
       <h2>Inspector de Red</h2>
-      <span id="counter" class="badge">0</span>
+      <div class="header-actions">
+        <button id="settingsBtn" class="icon-btn" title="Configurar traducciones de eventos">⚙️</button>
+        <span id="counter" class="badge">0</span>
+      </div>
     </div>
     <div class="controls">
       <input 
@@ -25,6 +28,24 @@
       </div>
     </div>
   </header>
+
+  <div id="settingsPanel" class="settings-panel hidden">
+    <div class="settings-header">
+      <h3>Traducciones de eventos</h3>
+      <button id="closeSettingsBtn" class="icon-btn" title="Cerrar">✕</button>
+    </div>
+    <div id="translationList" class="translation-list"></div>
+    <form id="translationForm" class="translation-form">
+      <input type="text" id="newDomain" placeholder="Dominio (ej: criteo, * para todos)" list="domainPresets" required />
+      <datalist id="domainPresets">
+        <option value="criteo"></option>
+        <option value="*"></option>
+      </datalist>
+      <input type="text" id="newCode" placeholder="Código evento (ej: vpg)" required />
+      <input type="text" id="newLabel" placeholder="Traducción (ej: View page)" required />
+      <button type="submit">Agregar</button>
+    </form>
+  </div>
 
   <main>
     <div id="requestList" class="request-list">

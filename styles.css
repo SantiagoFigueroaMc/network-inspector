@@ -45,6 +45,126 @@ header {
   font-weight: bold;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.icon-btn:hover {
+  background-color: #f1f5f9;
+}
+
+.settings-panel {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-panel.hidden {
+  display: none;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-header h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.translation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.translation-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 4px 6px;
+}
+
+.translation-row .domain-tag {
+  background-color: #e0e7ff;
+  color: #4338ca;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-weight: 600;
+}
+
+.translation-row .code-tag {
+  font-family: monospace;
+  color: #6366f1;
+  font-weight: 600;
+}
+
+.translation-row .label-text {
+  flex: 1;
+  color: #334155;
+}
+
+.translation-row .remove-btn {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.translation-form {
+  display: flex;
+  gap: 6px;
+}
+
+.translation-form input {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  min-width: 0;
+}
+
+.translation-form button {
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.translation-form button:hover {
+  background-color: #1d4ed8;
+}
+
 .controls {
   display: flex;
   flex-direction: column;
