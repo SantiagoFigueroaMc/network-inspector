@@ -5,4 +5,5 @@ const DEFAULT_EVENT_TRANSLATIONS = [
   { domain: "criteo", code: "vh", label: "View Home" },
   { domain: "criteo", code: "vpg", label: "View Page" },
   { domain: "criteo", code: "vb", label: "View Basket" },
+  { domain: "criteo", code: "vp", label: "View Product" },
 ];
