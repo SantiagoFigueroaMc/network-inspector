@@ -260,7 +260,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function translateQueryParam(key, value) {
-  if (key !== "p2" || typeof value !== "string") return value;
+  if (!/^p[0-4]$/.test(key) || typeof value !== "string") return value;
 
   const result = {};
   const normalizedValue = value.includes("=") ? value : decodeURIComponent(value);
@@ -323,8 +323,19 @@ function parseProductEntry(product) {
 
 function getEventType(request, translations = DEFAULT_EVENT_TRANSLATIONS) {
   const queryParams = request.queryParams || {};
-  const translatedP2 = translateQueryParam("p2", queryParams.p2);
-  const eventCode = queryParams.e || translatedP2.e;
+  let eventCode = queryParams.e;
+
+  // El código de evento puede venir dentro de cualquiera de los params pN (p0 a p4), no solo p2
+  if (!eventCode) {
+    for (const key of ["p0", "p1", "p2", "p3", "p4"]) {
+      const translated = translateQueryParam(key, queryParams[key]);
+      if (translated && typeof translated === "object" && translated.e) {
+        eventCode = translated.e;
+        break;
+      }
+    }
+  }
+
   if (!eventCode) return "Evento desconocido";
 
   const hostname = (request.hostname || "").toLowerCase();
