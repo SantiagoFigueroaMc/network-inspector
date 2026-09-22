@@ -1,4 +1,4 @@
-# Network Request Inspector (Criteo Inspector)
+# Network Request Inspector
 
 Extensión de Chrome que monitorea y visualiza las peticiones de red enviadas hacia endpoints o dominios específicos, con traducción de eventos de Criteo.
 
@@ -7,7 +7,7 @@ Extensión de Chrome que monitorea y visualiza las peticiones de red enviadas ha
 1. Abre Chrome (o cualquier navegador basado en Chromium) y ve a `chrome://extensions`.
 2. Activa el **Modo de desarrollador** (interruptor en la esquina superior derecha).
 3. Haz clic en **Cargar descomprimida** (Load unpacked).
-4. Selecciona la carpeta raíz de este proyecto (`criteo-inspector`), la que contiene `manifest.json`.
+4. Selecciona la carpeta raíz de este proyecto (`network-inspector`), la que contiene `manifest.json`.
 5. La extensión "Network Request Inspector" aparecerá en la lista y en la barra de herramientas.
 
 Cada vez que modifiques el código, vuelve a `chrome://extensions` y haz clic en el botón de recarga (🔄) de la extensión para aplicar los cambios.
