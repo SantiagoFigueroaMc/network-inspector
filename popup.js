@@ -1,11 +1,4 @@
-// Traducciones de eventos por defecto, agrupadas por dominio ("criteo" o patrón custom, "*" aplica a cualquiera)
-const DEFAULT_EVENT_TRANSLATIONS = [
-  { domain: "criteo", code: "vl", label: "View Listing" },
-  { domain: "criteo", code: "ac", label: "Add to Cart" },
-  { domain: "criteo", code: "vh", label: "View Home" },
-  { domain: "criteo", code: "vpg", label: "View page" },
-];
-
+// Traducciones de eventos por defecto: ver event-translations.js
 let eventTranslations = DEFAULT_EVENT_TRANSLATIONS;
 
 document.addEventListener("DOMContentLoaded", async () => {
